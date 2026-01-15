@@ -1,10 +1,11 @@
 from collections.abc import Sequence
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from sqlalchemy import Select, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.schemas import StatusUpdate, VideoCreate
+from app.utils import FFProbeError, probe_video
 from core.models import Video, VideoStatus
 
 
@@ -53,7 +54,29 @@ class VideoService:
     async def create_video(data: VideoCreate, session: AsyncSession) -> Video:
         """Create a new video."""
 
-        video = Video(**data.model_dump())
+        payload = data.model_dump()
+
+        if payload.get("duration") is None or payload.get("start_time") is None:
+            try:
+                probe = probe_video(payload["video_path"])
+            except FFProbeError as e:
+                raise ValueError(
+                    f"Unable to read video metadata via ffprobe: {e}"
+                ) from e
+
+            if payload.get("duration") is None:
+                if probe.duration is None or probe.duration <= timedelta(0):
+                    raise ValueError("Unable to determine duration via ffprobe.")
+                payload["duration"] = probe.duration
+
+            if payload.get("start_time") is None:
+                if probe.creation_time is None:
+                    raise ValueError(
+                        "Unable to determine start_time via ffprobe (creation_time tag missing)."
+                    )
+                payload["start_time"] = probe.creation_time
+
+        video = Video(**payload)
         session.add(video)
         await session.commit()
         await session.refresh(video)

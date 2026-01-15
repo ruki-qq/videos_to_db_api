@@ -10,10 +10,10 @@ from sqlalchemy import (
     Text,
     func,
 )
-from sqlalchemy.dialects.postgresql import INTERVAL, TIMESTAMP
 from sqlalchemy.orm import Mapped, mapped_column
 
 from .base import Base
+from .types import DurationType
 
 
 class VideoStatus(Enum):
@@ -25,16 +25,16 @@ class VideoStatus(Enum):
 class Video(Base):
     video_path: Mapped[str] = mapped_column(
         Text,
-        CheckConstraint("char_length(video_path) > 0", name="video_path_not_empty"),
+        CheckConstraint("length(video_path) > 0", name="video_path_not_empty"),
         nullable=False,
         info={"description": "Path to the video file"},
     )
     start_time: Mapped[datetime] = mapped_column(
-        TIMESTAMP(timezone=True),
+        DateTime(timezone=True),
         nullable=False,
     )
     duration: Mapped[timedelta] = mapped_column(
-        INTERVAL,
+        DurationType(),
         nullable=False,
     )
     camera_number: Mapped[int] = mapped_column(
@@ -44,7 +44,7 @@ class Video(Base):
     )
     location: Mapped[str] = mapped_column(
         String(511),
-        CheckConstraint("char_length(location) > 0", name="location_not_empty"),
+        CheckConstraint("length(location) > 0", name="location_not_empty"),
         nullable=False,
     )
     status: Mapped[VideoStatus] = mapped_column(

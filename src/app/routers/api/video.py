@@ -62,7 +62,10 @@ async def create_video(
     logger.debug(
         f"Running VideoService.create_video with data = {data} and session = {session}."
     )
-    return await VideoService.create_video(data, session)
+    try:
+        return await VideoService.create_video(data, session)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.patch("/{video_id}/status", response_model=VideoResponse)

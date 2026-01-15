@@ -14,7 +14,15 @@ class VideoBase(BaseModel):
 
 
 class VideoCreate(VideoBase):
-    pass
+    start_time: datetime | None = Field(
+        default=None,
+        description="Время начала записи",
+    )
+    duration: timedelta | None = Field(
+        default=None,
+        gt=timedelta(0),
+        description="Длительность видео",
+    )
 
 
 class VideoResponse(VideoBase):
